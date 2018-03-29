@@ -3,14 +3,13 @@ import rospy
 import ros
 import rospy
 import tf
-from nav_msgs import MapMetaData.msg
 from nav_msgs import OccupancyGrid
-
+from nav_msgs import MapMetaData
 from geometry_msgs import PoseWithCovarianceStamped
 from move_base_msgs import MoveBaseActionGoal
 from actionlib_msgs import GoalID
-from aco_ros import mapHandler
-from aco_ros import Drone
+from ant_colony_optimizer import mapHandler
+from ant_colony_optimizer import Drone
 
 #Independent multi-mesh drone/robot controller with ACO
 #Will seek out a amount of drones to be used for
