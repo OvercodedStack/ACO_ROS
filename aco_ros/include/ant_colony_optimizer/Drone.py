@@ -3,7 +3,8 @@ import rospy
 import ros
 import tf
 import nav_msgs
-import geometry_msgs
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
 import sensor_msgs
 
 from std_msgs import String
@@ -15,10 +16,19 @@ class Drone:
         self.MAX_DIST = 0.5
         self.MIN_DIST = 0.45
         self.LONG_DIST = 1.00
+        self.AMOUNT_OF_POINTS   = 180.0#             //Amount of points in scan_in laserscan
+        self.MULTIPLIER 		= (AMOUNT_OF_POINTS/2)/90    
+        self.FRONT_SCAN_ANGLE	= (atan(SIDE_DISTANCE/MINIMUM_DISTANCE)*(180/M_PI))#	//Calculate front cone angle
+        self.SIDE_SCAN_ANGLE	= 30 
+        self.FRONT_SCANS	= self.MULTIPLIER * self.FRONT_SCAN_ANGLE#Scanpoints in the front cone
+        self.SIDE_SCANS		= self.MULTIPLIER * self.SIDE_SCAN_ANGLE #Scanpoints in the side cones
+
         self.AMOUNT_OF_POINTS = 180.0
-
-
-
+        self.RECORD_INTERVAL = 3 #Seconds
+        
+        
+        
+        self.oldTime = rospy.Time.to_sec()
         self.laserscan = geometry_msgs.LaserScan()
         self.imu = geometry_msgs.Imu()
         self.sequence = 0           #the drone own ID number in group
@@ -28,6 +38,11 @@ class Drone:
         self.path = nav_msgs.Path()
         self.goalArray = actionlib_msgs.GoalStatusArray()
         self.cmdString = ""
+        self LIN = Vector3()
+        self ANG = Vector3()
+        self.cmd_vel = Twist()
+        
+        
         ####################################### Set Topics##############
         self.sequence = seqTp
 
@@ -76,36 +91,71 @@ class Drone:
                 self.pubCmd_ = False
 
     def start_wandering(self): #Start wandering towards a location where the laserscan is furthest "empty"
-        self.record_path()
+        self.cmd_vel = Twist()
+        if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL): 
+            self.record_path()       
+            self.oldTime = rospy.Time.to_sec()
+        self.controller()
+         
+        
+        
+    def controller(self):
+        decisions = {0:stop,1:foward,2:left,3:right,4:escape,5:rise,6:fall}
+        lastTime
+        
+        if (front_range()): #if the whole array gets swampped, attempt reverse and escape.
+            decisions[1]()
+        elif:(rangeOnSides(scan_in,0,90-SIDE_SCANS) > rangeOnSides(scan_in,SIDE_SCANS+90,180)):# printf("Turn Right");
+            decisions[3]()
+        elif (rangeOnSides(scan_in,0,90-SIDE_SCANS) < rangeOnSides(scan_in,SIDE_SCANS+90,180)):#printf("Turn Left")
+            decisions[2]()
+        else:#	printf("Stop");
+            decisions[4]()       
+        
+        
+        self.cmd_vel.linear = lin
+        self.cmd_vel.angular = ang  
 
 
+    def front_range(self):
+        for(int i = -45+90; i <=  45+90; i++){ //+FRONT_SCANS + SIDE_SCANS
+            if (array_in->ranges[i] < 0.5):return false
+    	return true
+        
+    def side_ranges(self):
+        pointFound = 0
+        for(int i = min; i < max; i++){
+            if (array_in->ranges[i] > 1.25):pointFound+=1
+        return pointFound;    
 
-
-
-
-
-    def move(self,dir):
-
-    def escape(self):
-
-    def moveFoward(self):
+    def move_foward(self,dir):
+        lin.x = SPEED
+        self.cmd_vel.linear = lin
+        self.cmd_vel.angular = ang
 
     def stop(self):
+        lin.x = 0
+        lin.y = 0 
+        lin.z = 0
+        ang.x = 0
+        ang.y = 0
+        ang.z = 0
+        
+    def escape(self):
+        lin.x = 0
+        ang.y = TURN_SPEED
 
-    def turn_left(self):
+    def left(self):
+        ang.y = TURN_SPEED
 
-    def turn_right(self):
+    def right(self):
+        ang.y = -TURN_SPEED
 
-    def drop_down(self):
+    def drop(self):
+        lin.z = 0.75*-SPEED
 
-
-    def move_up(self):
-
-
-
-
-
-
+    def rise(self):
+        lin.z = 0.75*SPEED
 
     def record_path(self):
         ##########Header for path
@@ -117,9 +167,6 @@ class Drone:
         ########Data to make the pose
         p.pose = self.odom.pose()
         self.path.poses.append(p)
-
-
-
 
 
 
