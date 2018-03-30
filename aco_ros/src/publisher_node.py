@@ -40,7 +40,7 @@ class ACO:
                 drone.startDrone()
             if runTime == self.NUMBER_OF_ILLETERATIONS:
                 running = False
-
+        bestPath = mapHandler(dronePath)
         #point_array = mapHandler.locate_plains(self.map,self.metadata.width,self.metadata.height,5)
 
 #Constructor
@@ -61,7 +61,7 @@ class ACO:
         matching.sort()
         droneNumber = len(matching)  #Match the amount of drones to the amount of laserscans we found
         #rospy.loginfo(str(droneNumber))
-        #################Subscribers for maps ##############################	    
+        #################Subscribers for maps ##############################
         rospy.Subscriber("/map",OccupancyGrid, self.callForMap)
         rospy.Subscriber("/map_metadata",MapMetaData,self.callForMetadata)
         rospy.Subscriber("/initialpose",PoseWithCovarianceStamped, self.callFinalPose)
@@ -75,7 +75,7 @@ class ACO:
         	self.main()
         else:
         	rospy.loginfo("No drones to spawn!")
-  
+
 
 #Trigger
 if __name__=='__main__':

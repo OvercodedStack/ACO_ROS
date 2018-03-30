@@ -3,9 +3,23 @@ import rospy
 import ros
 import tf
 import nav_msgs
-import opencv
-
+#import scipy
 from math import pi as phi
+from geometry_msgs.msg import Path
+
+class Mapper:
+    self.storedPaths[]
+    def __init__(self,pathArray):
+        managedPath = Path()
+        #self.managedPath.seq = pathArray.seq
+        managedPath.pose = pathArray.pose
+
+    computePathLines(self):
+        for point in managedPath.pose:
+            vector = point
+
+
+
 
 
 #We'll figure out a way to export empty waypoints  and return them out to where they're needed
