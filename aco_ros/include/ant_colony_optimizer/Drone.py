@@ -9,6 +9,10 @@ import sensor_msgs
 
 from std_msgs import String
 
+#We'll concern ourselves with a 2D plane for now. We can't do much about laserscanning the bottom of the drone.
+
+
+
 class Drone:
     def __init__(self,seqTp): #Setup
         self.SPEED = 0.40
@@ -22,12 +26,10 @@ class Drone:
         self.SIDE_SCAN_ANGLE	= 30
         self.FRONT_SCANS	= self.MULTIPLIER * self.FRONT_SCAN_ANGLE#Scanpoints in the front cone
         self.SIDE_SCANS		= self.MULTIPLIER * self.SIDE_SCAN_ANGLE #Scanpoints in the side cones
-
         self.AMOUNT_OF_POINTS = 180.0
         self.RECORD_INTERVAL = 3 #Seconds
 
-
-
+        self.shutdown = False
         self.oldTime = rospy.Time.to_sec()
         self.laserscan = geometry_msgs.LaserScan()
         self.imu = geometry_msgs.Imu()
@@ -41,8 +43,9 @@ class Drone:
         self LIN = Vector3()
         self ANG = Vector3()
         self.cmd_vel = Twist()
-
-
+        self.myName = "drone_" + str(seqTp)
+        self.dronePublisher = rospy.Publisher(myName,Twist,queue_size=10)
+        self.setValues()
         ####################################### Set Topics##############
         self.sequence = seqTp
 
@@ -60,13 +63,11 @@ class Drone:
             self.laserscan = laser
         else:
             return "Problem with laser in " + str(self.sequence) + "."
-
     def getImu(imuIn):
         if imuIn != null:
             self.imu = imuIn
         else:
             return "No Imu provided in " + str(self.sequence)+ "."
-
     def getOdom(odomIn):
         if odomIn != null:
             self.odom = odomIn
@@ -75,9 +76,9 @@ class Drone:
     ##########################################
     def startDrone(self):
         self.start_wandering()
-        self.publish()
+    #    self.publish()
 
-    def publish(self):
+    def publish(self): #Set a publishing state to push data out
         self.pubPath_ = False
         self.pubCmd_ = False
         pubPath = rospy.Publisher("/ACOpath", Path, queue_size=10)
@@ -91,31 +92,41 @@ class Drone:
                 self.pubCmd_ = False
 
     def start_wandering(self): #Start wandering towards a location where the laserscan is furthest "empty"
-        self.cmd_vel = Twist()
-        if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):
-            self.record_path()
-            self.oldTime = rospy.Time.to_sec()
-        self.controller()
+        wandering = True
+        while(wandering):
+            self.cmd_vel = Twist()
+            if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):
+                self.record_path()
+                self.oldTime = rospy.Time.to_sec()
+            self.controller()
+            if (self.shutdown == True): #"Alive" condition to shutoff a drone if needed
+                wandering = False
 
+    def shutDownDrone(self):
+        self.shutdown = True
 
-
-    def controller(self):
-        decisions = {0:stop,1:foward,2:left,3:right,4:escape,5:rise,6:fall}
-        lastTime
-
+    def controller(self): #Controls to move the drone
+        decisions = {0:stop,1:foward,2 :left,3:right,4:escape,5:rise,6:fall}
         if (front_range()): #if the whole array gets swampped, attempt reverse and escape.
             decisions[1]()
-        elif(rangeOnSides(scan_in,0,90-SIDE_SCANS) > rangeOnSides(scan_in,SIDE_SCANS+90,180)):# printf("Turn Right");
+        if (self.stopMoving):
+            decisions[0]()
+        if(rangeOnSides(scan_in,0,90-SIDE_SCANS) > rangeOnSides(scan_in,SIDE_SCANS+90,180)):# printf("Turn Right");
             decisions[3]()
-        elif(rangeOnSides(scan_in,0,90-SIDE_SCANS) < rangeOnSides(scan_in,SIDE_SCANS+90,180)):#printf("Turn Left")
+        if(rangeOnSides(scan_in,0,90-SIDE_SCANS) < rangeOnSides(scan_in,SIDE_SCANS+90,180)):#printf("Turn Left")
             decisions[2]()
-        else:#	printf("Stop");
+        if(self.isStuck() && selt.stopMoving != True):#	printf("Stop");
             decisions[4]()
+        self.cmd_vel.linear = self.lin
+        self.cmd_vel.angular = self.ang
 
+        self.dronePublisher.publish(self.cmd_vel)
+        #Set acceleration speeds and publish to topic
 
-        self.cmd_vel.linear = lin
-        self.cmd_vel.angular = ang
-
+    def isStuck(self):
+        if (self.lin.x == 0 && self.ang.y == 0)
+            return True
+        return False
 
     def front_range(self):
         i = 45
@@ -132,8 +143,6 @@ class Drone:
 
     def move_foward(self,dir):
         lin.x = SPEED
-        self.cmd_vel.linear = lin
-        self.cmd_vel.angular = ang
 
     def stop(self):
         lin.x = 0

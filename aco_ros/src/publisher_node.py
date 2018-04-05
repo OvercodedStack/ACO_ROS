@@ -44,6 +44,7 @@ class ACO:
         #point_array = mapHandler.locate_plains(self.map,self.metadata.width,self.metadata.height,5)
 
 #Constructor
+
     def __init__(self):
         #Declare the variables required for the program
         self.map = OccupancyGrid()
@@ -84,9 +85,6 @@ if __name__=='__main__':
         main_prog = ACO()
     except rospy.ROSInterruptException:
         pass
-
-
-
 
         # self.pub_msg = MoveBaseActionGoal()
         # self.cancel = GoalID()

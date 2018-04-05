@@ -6,13 +6,28 @@ import nav_msgs
 #import scipy
 from math import pi as phi
 from geometry_msgs.msg import Path
+#This file only handles the map-related data. Specificallly it is meant to control where would waypoints be considered.
+#It should only return waypoints and possibly a path through those points.
 
 class Mapper:
     self.storedPaths[]
     def __init__(self,pathArray):
         managedPath = Path()
+        self.bestPath = Path()
         #self.managedPath.seq = pathArray.seq
         managedPath.pose = pathArray.pose
+
+    def locatePlains(self):
+        #Use scipy to figure out a way of locating points with the same category in them
+
+    def locateBestPath(self):
+
+
+        self.bestPath =
+
+    def returnPlaints(self):
+        return
+
 
     computePathLines(self):
         for point in managedPath.pose:
