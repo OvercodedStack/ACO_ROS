@@ -17,19 +17,19 @@ In addition to a virtual space, an active-map should be generated at the same ti
 e.g if you had 5 drones, you would name them 1, 2, 3, ... 5. 
 (Virtual drones) 
 
-Subscribers:
-/droneLaser_(#ID) 
-/droneOdom_(#ID) 
-/droneImu_(#ID) 
-/map
+Subscribers:  
+/droneLaser_(#ID)  
+/droneOdom_(#ID)   
+/droneImu_(#ID)   
+/map  
 
-Publishers:
-/ACOpath
-/ACOcmd
-/drone_(#ID) 
+Publishers:  
+/ACOpath  
+/ACOcmd  
+/drone_(#ID)   
 
-Transforms: 
-/DRONE_(#ID) 
+Transforms:   
+/DRONE_(#ID)   
 
 
 Services:
