@@ -29,6 +29,8 @@ class Drone:
         self.AMOUNT_OF_POINTS = 180.0
         self.RECORD_INTERVAL = 3 #Seconds
 
+        self.driving = DriveHandler()
+
         self.shutdown = False
         self.oldTime = rospy.Time.to_sec()
         self.laserscan = geometry_msgs.LaserScan()
@@ -60,6 +62,7 @@ class Drone:
     ############Callbacks###################
     def getLaser(laser):
         if laser != null:
+            self.laserscan = LaserScan()
             self.laserscan = laser
         else:
             return "Problem with laser in " + str(self.sequence) + "."
