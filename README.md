@@ -4,10 +4,11 @@ This is a work in progress ACO algorithm built for use in automated driving usin
 While there are some variants of ACO, this project is inspired by the book written by Marco Dorigo and Thomas Stützle. If you have access to th e book via your institution or other means, please give it a read to understand the concept. https://mitpress.mit.edu/books/ant-colony-optimization . While this package uses some parts and logic from ACO, it is important to realize that there are some parts still in development as the project becomes more avaliable.   
 
 
-**---Driving a robot---**  
+Driving a robot
+--------------
 (coming soon in a future update)    
 
-**---Virtual drones---**  
+Virtual drones  
 --------------
 (HOLO-lens or ROS-Compatible AR devices ONLY. MUST create drones in a Unity space.) 
 The way that this works is that ROS is able to pick up the data from a N amount of drones created in a Unity virtual game space. Each drone would then be driven around with this ROS package by sending twist messages and reading in data from each drone. Each drone will have a script install that will read in laserscan, IMU, and Odometry data. Each drone will then post/read data from unique individual subscriber and publisher nodes. The twist data is sent back to Unity which will drive the drone around in its virtual space.   
