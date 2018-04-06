@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import rospy
-import ros
-import rospy
-import tf
+
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import MapMetaData
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -64,7 +62,7 @@ class ACO:
         #rospy.loginfo(str(droneNumber))
         #################Subscribers for maps ##############################
         rospy.Subscriber("/map",OccupancyGrid, self.callForMap)
-        rospy.Subscriber("/map_metadata",MapMetaData,self.callForMetadata)
+        #rospy.Subscriber("/map_metadata",MapMetaData,self.callForMetadata)
         rospy.Subscriber("/initialpose",PoseWithCovarianceStamped, self.callFinalPose)
 	    ####################################################Run calcuations
         if (droneNumber != 0):

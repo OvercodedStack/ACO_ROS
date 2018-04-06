@@ -46,15 +46,15 @@ class Drone:
         self ANG = Vector3()
         self.cmd_vel = Twist()
         self.myName = "drone_" + str(seqTp)
-        self.dronePublisher = rospy.Publisher(myName,Twist,queue_size=10)
+        self.dronePublisher = rospy.Publisher(myName,Twist,queue_size=10) #Twist Publisher node
         self.setValues()
         ####################################### Set Topics##############
         self.sequence = seqTp
 
     def setValues(self):#Setup the subscribers
-        droneNameLaser = "/droneLaser" + str(self.sequence)
-        droneNameImu = "/droneImu" + str(self.sequence)
-        droneNameOdom = "/droneOdom" + str(self.sequence)
+        droneNameLaser = "/droneLaser_" + str(self.sequence)
+        droneNameImu = "/droneImu_" + str(self.sequence)
+        droneNameOdom = "/droneOdom_" + str(self.sequence)
         rospy.Subscriber(droneNameLaser,LaserScan, self.getLaser)
         rospy.Subscriber(droneNameImu,Imu,self.getImu)
         rospy.Subscriber(droneNameOdom,Odometry, self.getOdom)
