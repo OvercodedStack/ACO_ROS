@@ -7,8 +7,9 @@ While there are some variants of ACO, this project is inspired by the book writt
 **---Driving a robot---**  
 (coming soon in a future update)    
 
-**---Virtual drones---** (HOLO-lens or ROS-Compatible AR devices ONLY. MUST create drones in a Unity space.)  
-
+**---Virtual drones---**  
+--------------
+(HOLO-lens or ROS-Compatible AR devices ONLY. MUST create drones in a Unity space.) 
 The way that this works is that ROS is able to pick up the data from a N amount of drones created in a Unity virtual game space. Each drone would then be driven around with this ROS package by sending twist messages and reading in data from each drone. Each drone will have a script install that will read in laserscan, IMU, and Odometry data. Each drone will then post/read data from unique individual subscriber and publisher nodes. The twist data is sent back to Unity which will drive the drone around in its virtual space.   
 
 In addition to a virtual space, an active-map should be generated at the same time that the robot is being run in order to create a map 
@@ -19,9 +20,6 @@ e.g if you had 5 drones, you would name them 1, 2, 3, ... 5.
 (Virtual drones Setup)   
 
 **Subscribers:**  
-
-Subscribers:
---------------
 /droneLaser_(#ID)  
 /droneOdom_(#ID)   
 /droneImu_(#ID)   
