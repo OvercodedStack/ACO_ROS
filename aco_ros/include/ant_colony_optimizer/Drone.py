@@ -3,16 +3,14 @@ import rospy
 import ros
 import tf
 import nav_msgs
+from nav_msgs.msg import Map
+from nav_msgs.msg import Path
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 import sensor_msgs
-
 from std_msgs import String
 
 #We'll concern ourselves with a 2D plane for now. We can't do much about laserscanning the bottom of the drone.
-
-
-
 class Drone:
     def __init__(self,droneName,seqTp,odomTrue,imuTrue): #Setup
         self.SPEED              = 0.40
@@ -29,6 +27,7 @@ class Drone:
         self.AMOUNT_OF_POINTS   = 180.0
         self.RECORD_INTERVAL    = 3 #Seconds
 
+        self.map = Map()
         self.driving  = DriveHandler()
         self.shutdown = False
         self.oldTime  = rospy.Time.to_sec()
@@ -98,19 +97,38 @@ class Drone:
     def start_wandering(self):
         wandering = True
         #self.driving - the DriveHandler object
-        while(wandering):
+        while(wandering && self.shutdown == False):
             self.cmd_vel = Twist()
             if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):
                 self.record_path()
                 self.oldTime = rospy.Time.to_sec()
-            self.controller()
+            myTwist = self.driving.run(self.laserscan, self.map,self.path)
+
+
+            #self.controller()
             if (self.shutdown == True): #"Alive" condition to shutoff a drone if needed
                 wandering = False
+
+    def checkTwist(self,In):
+        if (in == "Crash"):
+            self.left()
+            self.driving.
+
+
 
     def shutDownDrone(self):
         self.shutdown = True
 
-    def controller(self): #Controls to move the drone
+
+    def controller_cmdList(self,CmdList):
+        decisions = {0:stop,1:foward,2 :left,3:right,4:escape,5:rise,6:fall}
+        for cmd in CmdList:
+            decisions[cmd]()
+        self.cmd_vel.linear = self.lin
+        self.cmd_vel.angular = self.ang
+        self.dronePublisher.publish(self.cmd_vel)
+
+    def controller_wanderer(self): #Controls to move the drone
         decisions = {0:stop,1:foward,2 :left,3:right,4:escape,5:rise,6:fall}
         if (front_range()): #if the whole array gets swampped, attempt reverse and escape.
             decisions[1]()

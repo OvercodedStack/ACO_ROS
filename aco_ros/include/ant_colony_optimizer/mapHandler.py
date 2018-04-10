@@ -12,7 +12,6 @@ from geometry_msgs.msg import Path
 class Mapper:
     self.storedPaths[]
     def __init__(self,pathArray):
-        managedPath = Path()
         self.bestPath = Path()
         #self.managedPath.seq = pathArray.seq
         managedPath.pose = pathArray.pose

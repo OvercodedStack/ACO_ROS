@@ -37,10 +37,9 @@ class DriveHandler:
     def setGoal(self,goalPt):
         self.goalPoint = goalPt
 
-
     #Functon that returns a point that the robot can go towards once it has a laserscan in view. The idea is that once it runs
     # a point is returned that can point towards a point that is sufficently clear to go to.
-    def locateFrontierPt(self,laserscanIn, map,escapePath): #escapePath is a bool that deternimes if this is a escape routine
+    def locateFrontierPt(self,laserscanIn, map,escapePath,passArray): #escapePath is a bool that deternimes if this is a escape routine
         myScan = LaserScan()
         myLocation = Pose()
         myScan = laserscanIn
@@ -89,6 +88,8 @@ class DriveHandler:
             for cluster in clusters:
                 myDirections.append(cluster[(len(cluster)//2)])
             oldPt = Point()
+            elif (passArray):
+                return myDirections #Return an array of possible points to walk towards to.
         #Scroll the list of points possible to roll foward and find the closest point to the goal. Select this point to drive foward.
             for point in myDirections:
                 finalFrontierPoint = self.convertMapArrayIntoXY(point,width)
@@ -97,7 +98,7 @@ class DriveHandler:
                     oldPt = myClosestPt
                 elif (myClosestPt < oldPt):
                     oldPt = myClosestPt
-            return oldPt
+            return oldPt #Closest point so far to goal
         else:
             return self.lastOrigins[len(self.lastOrigins)-1]
             #If there's nothing in our array, we're stuck in a corner or it's impossible to move. So we must send back an old point to walk back to.
@@ -114,6 +115,12 @@ class DriveHandler:
             self.oldTime = rospy.Time.now()
         return False
 
+    def run(self):
+        detec = self.detecWallCrash()
+        if (detec):
+            return "crash"
+        else:
+            return self.locateFrontierPt(False)
 
     #Function to convert a map index into coordinate X, Y points
     def convertMapArrayIntoXY(self,point,width):
@@ -123,7 +130,6 @@ class DriveHandler:
         finalPoint.x = x_mapPoint
         finalPoint.y = y_mapPoint
         return finalPoint
-
 
     #Twist generator
     def generteTwist(self, secondPoint,Odometry):
