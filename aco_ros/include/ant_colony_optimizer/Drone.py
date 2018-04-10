@@ -14,50 +14,52 @@ from std_msgs import String
 
 
 class Drone:
-    def __init__(self,seqTp): #Setup
-        self.SPEED = 0.40
-        self.TURN_SPEED = 0.55
-        self.MAX_DIST = 0.5
-        self.MIN_DIST = 0.45
-        self.LONG_DIST = 1.00
+    def __init__(self,droneName,seqTp,odomTrue,imuTrue): #Setup
+        self.SPEED              = 0.40
+        self.TURN_SPEED         = 0.55
+        self.MAX_DIST           = 0.5
+        self.MIN_DIST           = 0.45
+        self.LONG_DIST          = 1.00
         self.AMOUNT_OF_POINTS   = 180.0#             //Amount of points in scan_in laserscan
         self.MULTIPLIER 		= (AMOUNT_OF_POINTS/2)/90
         self.FRONT_SCAN_ANGLE	= (atan(SIDE_DISTANCE/MINIMUM_DISTANCE)*(180/M_PI))#	//Calculate front cone angle
         self.SIDE_SCAN_ANGLE	= 30
-        self.FRONT_SCANS	= self.MULTIPLIER * self.FRONT_SCAN_ANGLE#Scanpoints in the front cone
-        self.SIDE_SCANS		= self.MULTIPLIER * self.SIDE_SCAN_ANGLE #Scanpoints in the side cones
-        self.AMOUNT_OF_POINTS = 180.0
-        self.RECORD_INTERVAL = 3 #Seconds
+        self.FRONT_SCANS	    = self.MULTIPLIER * self.FRONT_SCAN_ANGLE#Scanpoints in the front cone
+        self.SIDE_SCANS		    = self.MULTIPLIER * self.SIDE_SCAN_ANGLE #Scanpoints in the side cones
+        self.AMOUNT_OF_POINTS   = 180.0
+        self.RECORD_INTERVAL    = 3 #Seconds
 
-        self.driving = DriveHandler()
-
+        self.driving  = DriveHandler()
         self.shutdown = False
-        self.oldTime = rospy.Time.to_sec()
-        self.laserscan = geometry_msgs.LaserScan()
-        self.imu = geometry_msgs.Imu()
+        self.oldTime  = rospy.Time.to_sec()
+        self.laserscan= geometry_msgs.LaserScan()
+        self.imu      = geometry_msgs.Imu()
         self.sequence = 0           #the drone own ID number in group
-        self.odom = Odometry()
-        self.twistMsg = Twist()
+
         self.childFrame = frameID    #String
-        self.path = nav_msgs.Path()
-        self.goalArray = actionlib_msgs.GoalStatusArray()
-        self.cmdString = ""
-        self LIN = Vector3()
-        self ANG = Vector3()
-        self.cmd_vel = Twist()
-        self.myName = "drone_" + str(seqTp)
+        self.path       = nav_msgs.Path()
+        self.goalArray  = actionlib_msgs.GoalStatusArray()
+        self.cmdString  = ""
+        self.odom       = Odometry()
+        self.twistMsg   = Twist()
+        self.lin        = Vector3()
+        self.ang        = Vector3()
+        self.cmd_vel    = Twist()
+        self.myName     = droneName
         self.dronePublisher = rospy.Publisher(myName,Twist,queue_size=10) #Twist Publisher node
-        self.setValues()
+        self.setValues(odomTrue,imuTrue)
         ####################################### Set Topics##############
         self.sequence = seqTp
 
-    def setValues(self):#Setup the subscribers
+    def setValues(self,odomTrue,imuTrue):#Setup the subscribers
         droneNameLaser = "/droneLaser_" + str(self.sequence)
-        droneNameImu = "/droneImu_" + str(self.sequence)
-        droneNameOdom = "/droneOdom_" + str(self.sequence)
         rospy.Subscriber(droneNameLaser,LaserScan, self.getLaser)
-        rospy.Subscriber(droneNameImu,Imu,self.getImu)
-        rospy.Subscriber(droneNameOdom,Odometry, self.getOdom)
+        if (odomTrue):
+            droneNameOdom = "/droneOdom_" + str(self.sequence)
+            rospy.Subscriber(droneNameOdom,Odometry, self.getOdom)
+        if (imuTrue):
+            droneNameImu = "/droneImu_" + str(self.sequence)
+            rospy.Subscriber(droneNameImu,Imu,self.getImu)
 
     ############Callbacks###################
     def getLaser(laser):
@@ -77,9 +79,6 @@ class Drone:
         else:
             return "Problem with odom in " + str(self.sequence)+ "."
     ##########################################
-    def startDrone(self):
-        self.start_wandering()
-    #    self.publish()
 
     def publish(self): #Set a publishing state to push data out
         self.pubPath_ = False
@@ -94,8 +93,11 @@ class Drone:
                 sendCommand.publish(self.cmdString)
                 self.pubCmd_ = False
 
-    def start_wandering(self): #Start wandering towards a location where the laserscan is furthest "empty"
+
+    #Start protocol to wander towards goal.
+    def start_wandering(self):
         wandering = True
+        #self.driving - the DriveHandler object
         while(wandering):
             self.cmd_vel = Twist()
             if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):

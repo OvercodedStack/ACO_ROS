@@ -68,7 +68,8 @@ class ACO:
         if (droneNumber != 0):
         	i = 1 #counter
         	while (i != droneNumber): #Instantciate an array of drone Objects
-        		self.droneArray[i] = Drone(i,"drone_"+str(i))
+        		self.droneArray[i] = Drone(i,"drone_"+str(i),True,False) #Set drone name and set the sensors that work at the moment
+                #self.droneArray[i] = Drone()
         		rospy.loginfo("Found drone" + str(i))
         		i += 1
         	self.main()
