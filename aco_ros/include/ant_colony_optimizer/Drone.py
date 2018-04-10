@@ -8,6 +8,7 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 import sensor_msgs
+import math
 from std_msgs import String
 
 #We'll concern ourselves with a 2D plane for now. We can't do much about laserscanning the bottom of the drone.
@@ -102,8 +103,7 @@ class Drone:
             if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):
                 self.record_path()
                 self.oldTime = rospy.Time.to_sec()
-            myTwist = self.driving.run(self.laserscan, self.map,self.path)
-
+            self.checkTwist(self.driving.run(self.laserscan, self.map,self.path))
 
             #self.controller()
             if (self.shutdown == True): #"Alive" condition to shutoff a drone if needed
@@ -112,12 +112,39 @@ class Drone:
     def checkTwist(self,In):
         if (in == "Crash"):
             self.left()
-            self.driving.
-
-
+        else:
+            self.controller_cmdList(In)
 
     def shutDownDrone(self):
         self.shutdown = True
+
+    #Twist generator
+    def normalizeVectorTwist(self, secondPoint,Odometry):
+        myOrigin = self.lastOrigins[len(self.lastOrigins)-1]
+        opposite = myOrigin.position.y - secondPoint.y
+        adjacent = myOrigin.position.x - secondPoint.x
+        thethaGoal = math.atan_2(adjacent,opposite) #The Z thetha goal that we're trying to turn towards.
+        radThethaGoal = math.radians(thethaGoal)
+        myAngle = myOrigin.orientation.z
+        # magnitude = math.sqrt((opposite* opposite)+(adjacent*adjacent))
+        # xNorm = opposite/magnitude
+        # yNorm = adjacent/magnitude
+        # myMsg = Twist()
+
+        #Descision Plan for between two points
+        #decisions = {0:stop,1:foward,2 :left,3:right,4:escape,5:rise,6:fall}
+        if (myAngle > radThethaGoal): #turn right
+            self.right()
+        elif(myAngle < radThethaGoal): #turn left
+            self.left()
+        elif(radThethaGoal - self.THETHAERRORMARGIN >= myAngle <= radThethaGoal + self.THETHAERRORMARGIN )
+            self.foward()
+        else:
+            self.escape()
+
+        self.cmd_vel.linear = self.lin
+        self.cmd_vel.angular = self.ang
+        self.dronePublisher.publish(self.cmd_vel)
 
 
     def controller_cmdList(self,CmdList):
@@ -165,31 +192,31 @@ class Drone:
         return pointFound;
 
     def move_foward(self,dir):
-        lin.x = SPEED
+        self.lin.x = SPEED
 
     def stop(self):
-        lin.x = 0
-        lin.y = 0
-        lin.z = 0
-        ang.x = 0
-        ang.y = 0
-        ang.z = 0
+        self.lin.x = 0
+        self.lin.y = 0
+        self.lin.z = 0
+        self.ang.x = 0
+        self.ang.y = 0
+        self.ang.z = 0
 
     def escape(self):
-        lin.x = 0
-        ang.y = TURN_SPEED
+        self.lin.x = 0
+        self.ang.y = TURN_SPEED
 
     def left(self):
-        ang.y = TURN_SPEED
+        self.ang.y = TURN_SPEED
 
     def right(self):
-        ang.y = -TURN_SPEED
+        self.ang.y = -TURN_SPEED
 
     def drop(self):
-        lin.z = 0.75*-SPEED
+        self.lin.z = 0.75*-SPEED
 
     def rise(self):
-        lin.z = 0.75*SPEED
+        self.lin.z = 0.75*SPEED
 
     def record_path(self):
         ##########Header for path

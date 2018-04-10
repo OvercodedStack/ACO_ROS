@@ -131,25 +131,7 @@ class DriveHandler:
         finalPoint.y = y_mapPoint
         return finalPoint
 
-    #Twist generator
-    def generteTwist(self, secondPoint,Odometry):
-        myOrigin = self.lastOrigins[len(self.lastOrigins)-1]
-        opposite = myOrigin.position.x - secondPoint.x
-        adjacent = myOrigin.position.y - secondPoint.y
-        thethaGoal = math.atan_2(adjacent,opposite) #The Z thetha goal that we're trying to turn towards.
-        radThethaGoal = math.radians(thethaGoal)
-        myAngle = myOrigin.orientation.z
 
-        #Descision Plan for between two points
-        #decisions = {0:stop,1:foward,2 :left,3:right,4:escape,5:rise,6:fall}
-        if (myAngle > radThethaGoal): #turn right
-            return 3
-        elif(myAngle < radThethaGoal): #turn left
-            return 2
-        elif(radThethaGoal - self.THETHAERRORMARGIN >= myAngle <= radThethaGoal + self.THETHAERRORMARGIN )
-            return 1
-        else:
-            return "Do the rotate"
 
 
 
