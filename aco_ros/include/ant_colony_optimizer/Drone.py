@@ -79,6 +79,70 @@ class Drone:
         else:
             return "Problem with odom in " + str(self.sequence)+ "."
     ##########################################
+    #Start protocol to wander towards goal.
+    def start_wandering(self):
+        wandering = True
+        #self.driving - the DriveHandler object
+        newPt = self.driving.locateFrontierPt(self.laserscan, self.map,self.path)
+        while(wandering && self.shutdown == False):
+            self.cmd_vel = Twist()
+            if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):
+                self.record_path()
+                self.oldTime = rospy.Time.to_sec()
+
+            #Check if the robot hasn't crashed yet or is near the new position
+            #if near or crashed, create a new point to walk towards
+            if(not self.detecWallCrash(self.laserscan) || self.checkLocation(newPt)):
+                self.checkTwist(newPt)
+            else:
+                newPt = self.driving.locateFrontierPt(self.laserscan, self.map,self.path)
+
+            #self.controller()
+            if (self.shutdown == True): #"Alive" condition to shutoff a drone if needed
+                wandering = False
+
+    def checkTwist(self,In):
+        if (in == "Crash"):
+            self.left()
+        else:
+            if (self.closeTo(In)):
+                self.recalculate = True
+            else:
+                self.controller_cmdList(In)
+
+    def checkLocation(myPos):
+        myCheckX = self.odom.pose.pose.position.x
+        myCheckY = self.odom.pose.pose.position.y
+        if (myPos.x == myCheckX && myPos.y == myCheckY):
+            return True
+        else:
+            return False
+
+    def detecWallCrash(self,laserIn):
+        if (rospy.Time.now()+self.DELAYSEC >= self.oldTime):
+            for range in laserIn.ranges:
+                if (range < self.MIN_DIST):
+                    return true
+            self.oldTime = rospy.Time.now()
+        return False
+
+
+    ############################Path functions    ##############################
+    def createNewPath(self):
+        ##########Header for path
+        h = std_msgs.msg.Header()
+        h.stamp = rospy.Time.now()
+        #h.frame_id = self.childFrame
+        self.path.header = h
+
+    def record_path(self):
+        ########Data to make the pose
+        p.pose = self.odom.pose()
+        self.path.poses.append(p)
+    def shutDownDrone(self):
+        self.shutdown = True
+
+    #########################Publish best path so far###########################
 
     def publish(self): #Set a publishing state to push data out
         self.pubPath_ = False
@@ -92,33 +156,7 @@ class Drone:
             if self.pubCmd_:
                 sendCommand.publish(self.cmdString)
                 self.pubCmd_ = False
-
-
-    #Start protocol to wander towards goal.
-    def start_wandering(self):
-        wandering = True
-        #self.driving - the DriveHandler object
-        while(wandering && self.shutdown == False):
-            self.cmd_vel = Twist()
-            if (rospy.Time.to_sec() >= oldTime + self.RECORD_INTERVAL):
-                self.record_path()
-                self.oldTime = rospy.Time.to_sec()
-            self.checkTwist(self.driving.run(self.laserscan, self.map,self.path))
-
-            #self.controller()
-            if (self.shutdown == True): #"Alive" condition to shutoff a drone if needed
-                wandering = False
-
-    def checkTwist(self,In):
-        if (in == "Crash"):
-            self.left()
-        else:
-            self.controller_cmdList(In)
-
-    def shutDownDrone(self):
-        self.shutdown = True
-
-    #Twist generator
+    ##################################Twist generator###########################
     def normalizeVectorTwist(self, secondPoint,Odometry):
         myOrigin = self.lastOrigins[len(self.lastOrigins)-1]
         opposite = myOrigin.position.y - secondPoint.y
@@ -173,6 +211,8 @@ class Drone:
         self.dronePublisher.publish(self.cmd_vel)
         #Set acceleration speeds and publish to topic
 
+    #############################Checkers for distance##########################
+
     def isStuck(self):
         if (self.lin.x == 0 && self.ang.y == 0)
             return True
@@ -190,6 +230,8 @@ class Drone:
         for j in range (0, self.MAX_DIST): #(int i = min; i < max; i++){
             if (array_in->ranges[i] > 1.25):pointFound+=1
         return pointFound;
+
+    ################################ROS Twist settings##########################
 
     def move_foward(self,dir):
         self.lin.x = SPEED
@@ -218,13 +260,4 @@ class Drone:
     def rise(self):
         self.lin.z = 0.75*SPEED
 
-    def record_path(self):
-        ##########Header for path
-        h = std_msgs.msg.Header()
-        h.stamp = rospy.Time.now()
-        #h.frame_id = self.childFrame
-        self.path.header = h
-
-        ########Data to make the pose
-        p.pose = self.odom.pose()
-        self.path.poses.append(p)
+    ############################################################################

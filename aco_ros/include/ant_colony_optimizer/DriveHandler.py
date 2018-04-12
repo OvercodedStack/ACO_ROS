@@ -107,13 +107,6 @@ class DriveHandler:
         # point = x_other + width*y_other
 
     #Slow delay check the laserscan every DELAYSEC seconds
-    def detecWallCrash(self,laserIn):
-        if (rospy.Time.now()+self.DELAYSEC >= self.oldTime):
-            for range in laserIn.ranges:
-                if (range < self.MIN_DIST):
-                    return true
-            self.oldTime = rospy.Time.now()
-        return False
 
     def run(self):
         detec = self.detecWallCrash()
