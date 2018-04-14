@@ -37,9 +37,10 @@ class DriveHandler:
     def setGoal(self,goalPt):
         self.goalPoint = goalPt
 
+
     #Functon that returns a point that the robot can go towards once it has a laserscan in view. The idea is that once it runs
     # a point is returned that can point towards a point that is sufficently clear to go to.
-    def locateFrontierPt(self,laserscanIn, map,escapePath,passArray): #escapePath is a bool that deternimes if this is a escape routine
+    def locateFrontierPt(self,laserscanIn, map,escapePath): #escapePath is a bool that deternimes if this is a escape routine
         myScan = LaserScan()
         myLocation = Pose()
         myScan = laserscanIn
@@ -53,7 +54,6 @@ class DriveHandler:
         #if (len(self.lastOrigins) >=4):
         #    self.lastOrigins.pop(0)
         #self.lastOrigins.append(myLocation)
-
         #Generate a radius of density around the robot
         for point in (0, self.points):
             x_other = myLocation.position.x + myScan[point]*cos(self.angles[point]+myLocation.Orientation.z)
@@ -69,7 +69,6 @@ class DriveHandler:
                 densityClusters.append(1)
 
             #averageDensity += mapPoint
-        checking = True
         myCluster = []
         clusters  = []
 
@@ -77,18 +76,18 @@ class DriveHandler:
         for point in densityClusters:
             if (point == 1):
                 myCluster.append(densityClusters.index(point))
-            if (len(myCluster) ==41):
+            if (len(myCluster) ==41): #Points that can cross the drone with a midpoint point.
                 clusters.append(myCluster)
                 myCluster = []
         myDirections = []
 
         #For the points found, select a random direction to go towards. Might change in the future to influence directionself.
         #For each cluster of free points, find the midpoint.
-        if clusters:
+        if clusters > 2: #TODO This is the part we're going to have to figure out for the logic needed to fork the descision between two paths
             for cluster in clusters:
                 myDirections.append(cluster[(len(cluster)//2)])
             oldPt = Point()
-            elif (passArray):
+            if(passArray):
                 return myDirections #Return an array of possible points to walk towards to.
         #Scroll the list of points possible to roll foward and find the closest point to the goal. Select this point to drive foward.
             for point in myDirections:

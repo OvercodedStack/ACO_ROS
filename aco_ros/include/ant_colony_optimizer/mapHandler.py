@@ -1,44 +1,63 @@
 #!/usr/bin/env python
 import rospy
-import ros
-import tf
 import nav_msgs
-#import scipy
 from math import pi as phi
 from geometry_msgs.msg import Path
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Twist
+from std_msgs.msg import Header
+
 #This file only handles the map-related data. Specificallly it is meant to control where would waypoints be considered.
 #It should only return waypoints and possibly a path through those points.
 
 class Mapper:
-    self.storedPaths[]
-    def __init__(self,pathArray):
+    def __init__(self,path):
         self.bestPath = Path()
-        #self.managedPath.seq = pathArray.seq
-        managedPath.pose = pathArray.pose
+        #self.bestPath.header = self.createHeader(0,frame)
+        bestPath = path
 
-    def locatePlains(self):
-        #Use scipy to figure out a way of locating points with the same category in them
+    def createHeader(self,seq,frame):
+        h = Header()
+        h.seq = seq
+        h.stamp = rospy.Time.now()
+        h.frame_id = frame
+        return h
 
-    def locateBestPath(self):
-
-
-        self.bestPath =
-
-    def returnPlaints(self):
-        return
-
-
-    computePathLines(self):
-        for point in managedPath.pose:
-            vector = point
+    def checkforBestPath(self,path):
+        myNewbestPath = Path()
+        myPathArray = self.bestPath.poses
+        for pose in myPathArray:
+            for point in path.pointsWithPheromone:
 
 
+                if (pose.position.x < point.point.x & pose.p point.distance ):
+                    ptX = (pose.position.x + point.point.x)/2
+                if (pose.position.y < point.point.y):
+                    ptY = (pose.position.x + point.point.x)/2
+
+
+
+
+
+
+
+
+
+
+
+
+    # def computePathLines(self):
+    #     for point in managedPath.pose:
+    #         vector = point
+    #
+    # def locatePlains(self):
+    #     i = 1
+    #     # Use scipy to figure out a way of locating points with the same category in them
 
 
 
 #We'll figure out a way to export empty waypoints  and return them out to where they're needed
-
-
+#self.managedPath.seq = pathArray.seq
 
 
 
