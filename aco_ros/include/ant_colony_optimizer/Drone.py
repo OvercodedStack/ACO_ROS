@@ -98,21 +98,23 @@ class Drone:
         #self.driving - the DriveHandler object
         newPt = self.driving.locateFrontierPt(self.laserscan, self.map,self.bestPath)
         self.driving.setGoal(self.goalPoint)
-        while(wandering && self.shutdown == False):
+        while(wandering & self.shutdown == False):
             self.cmd_vel = Twist()
             if (rospy.Time.to_sec() >= self.oldTime + self.RECORD_INTERVAL):
                 self.record_path()
                 self.oldTime = rospy.Time.to_sec()
 
+
             #Check if the robot hasn't crashed yet or is near the new position
             #if near or crashed, create a new point to walk towards
-            if(not self.detecWallCrash(self.laserscan) || self.checkLocation(newPt)):
+            if(not self.detecWallCrash(self.laserscan) | self.checkLocation(newPt)):
                 self.checkTwist(newPt)
             else:
                 newPt = self.driving.locateFrontierPt(self.laserscan, self.map,self.bestPath)
             if (self.shutdown == True): #"Alive" condition to shutoff a drone if needed
                 wandering = False
-
+        # create a new path
+        self.newMapper = Mapper()
     def checkTwist(self,In):
         if (In == "Crash"):
             self.left()
