@@ -5,14 +5,17 @@ from geometry_msgs.msg import Point
 import math
 #The packaged point data
 class packagedPt:
-    def __init__(self,pt,pheromone,dist):
+    def __init__(self,pt,pheromone,dist,orientation):
         self.point = Point()
         self.point = pt         #The point data
         self.phero = pheromone  #The pheromone influence
         self.distanceij = dist  #The distance data
+        self.orientation = orientation
 
     def getPoint(self):
         return self.point
+    def getOrientation(self):
+        return self.orientation
     def getDistance(self):
         return self.distanceij
     def getPhero(self):
@@ -25,13 +28,17 @@ class PathACO:
         self.pointsWithPheromone.append(Point())
         self.pointsWithPheromone = []
         self.distance = 0
-    #Append a point to the array and calculate the distance from one to another
-    def insertPoint(self,pt,pheromone,time):
+    #Append a point to the array and calculate the distance from one to another. Keep in mind we are also expecting orientation.
+    #  We just get it from odometry.
+    def insertPoint(self,pt,pheromone,time,orientation):
         self.time = time
         ptDist = self.calcDist(pt)
-        myPointPk = packagedPt(pt,pheromone,ptDist)
+        myPointPk = packagedPt(pt,pheromone,ptDist,orientation)
         self.pointsWithPheromone.append(myPointPk)
         self.distance += ptDist
+
+    def getTotalDist(self):\
+        return self.distance
     #Calculate distance
     def calcDist(self,pt):
         lastPt = self.pointsWithPheromone[len(self.pointsWithPheromone)-1]
