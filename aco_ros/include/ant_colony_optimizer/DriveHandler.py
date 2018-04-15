@@ -37,7 +37,6 @@ class DriveHandler:
     def setGoal(self,goalPt):
         self.goalPoint = goalPt
 
-
     #Functon that returns a point that the robot can go towards once it has a laserscan in view. The idea is that once it runs
     # a point is returned that can point towards a point that is sufficently clear to go to.
     def locateFrontierPt(self,laserscanIn, map,escapePath): #escapePath is a bool that deternimes if this is a escape routine

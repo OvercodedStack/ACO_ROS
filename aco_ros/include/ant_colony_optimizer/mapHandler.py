@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Header
+from copy import copy
 # This file only handles the map-related data. Specificallly it is meant to control where would waypoints be considered.
 # It should only return waypoints and possibly a path through those points.
 
@@ -18,7 +19,6 @@ class Mapper:
         myHead = self.createHeader(0,frame)
         self.bestPath.header = myHead
         self.bestPath.poses = self.createFakePose(path,frame)
-
 
     def createHeader(self,seq,frame):
         h = Header()
@@ -43,25 +43,25 @@ class Mapper:
         return poses
 
     def checkforBestPath(self, path):
-        myNewbestPath = Path()
-        tempH = myNewbestPath
         myPathArray = self.bestPath.poses
-
+        myNewbestPath = copy(myPathArray)
         skip = True
         prevPoint = Point()
         counter = 0
         if (bestDistance < path.getTotalDist):
             for pose in myPathArray:
                 if (skip):
-                    skip = false  # Skip the first point of the best array.
+                    skip = False  # Skip the first point of the best array.
                 else:  # For each point in the contested path, check each point.
                     point = path.pointsWithPheromone[counter]
-                    
-                    if (pose.position.x < point.point.x & bestPathDist < point.distance):  # Check if it's slightly better and the total distance is shorter
+                    bestPathDist = math.sqrt((pose.x - prevPoint.x)**2+(pose.y - prevPoint.y)**2)
+                    if (bestPathDist < point.distance):  # Check if it's slightly better and the total distance is shorter
+                        #Quick and dirty solution, not optimal but just want to get something working.
                         ptX = (pose.position.x + point.point.x) / 2
                         ptY = (pose.position.y + point.point.y) / 2
                 if (not ptX):
-
+                    myNewbestPath.poses[counter].pose.position.x = ptX
+                    myNewbestPath.poses[counter].pose.position.y = ptY
                 counter += 1
                 prevPoint = pose  # Save the previous pose from the best array
 

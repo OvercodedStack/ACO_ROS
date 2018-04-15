@@ -1,10 +1,15 @@
 #!/usr/bin/env python
+
 import rospy
-from aco_ros.ant_colony_optimizer import PathACO.py
-import nav_msgs
+from ..mapHandler import Mapper
+import DriveHandler
+import mapHandler
+import PathACO
 from nav_msgs.msg import Map
 from nav_msgs.msg import Path
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Imu
+from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import PoseWithCovariance
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
@@ -13,7 +18,7 @@ from std_msgs import String
 
 #We'll concern ourselves with a 2D plane for now. We can't do much about laserscanning the bottom of the drone.
 class Drone:
-    def __init__(self,droneName,seqTp,odomTrue,imuTrue,goalPt): #Setup
+    def __init__(self,droneName,seqTp,odomTrue,imuTrue,goalPt,frameID): #Setup
         self.SPEED              = 0.40
         self.TURN_SPEED         = 0.55
         self.MAX_DIST           = 0.5
@@ -34,14 +39,14 @@ class Drone:
         self.oldTime  = rospy.Time.to_sec()
         self.laserscan = LaserScan()
        # self.laserscan = geometry_msgs.LaserScan()
-        self.imu      = geometry_msgs.Imu()
+        self.imu      = Imu()
         self.sequence = 0           #the drone own ID number in group
         self.goalPoint = Point()
         self.goalPoint = goalPt
         self.childFrame = frameID    #String
-        self.path       = nav_msgs.Path()
+        #self.path       = Path()
         self.bestPath   = Path()
-        self.goalArray  = actionlib_msgs.GoalStatusArray()
+        #self.goalArray  = GoalStatusArray()
         self.cmdString  = ""
         self.arrayOfPaths = []
         self.odom       = Odometry()
@@ -65,7 +70,6 @@ class Drone:
             droneNameImu = "/droneImu_" + str(self.sequence)
             rospy.Subscriber(droneNameImu,Imu,self.getImu)
         rospy.Subscriber("/map",Map,self.getMap)
-
     ############Callbacks###################
     def getLaser(self,laser):
         if laser:
@@ -163,20 +167,6 @@ class Drone:
         if (not last):
             self.creteNewPath()
 
-    # def createNewPath(self):
-    #     ##########Header for path
-    #     h = std_msgs.msg.Header()
-    #     h.stamp = rospy.Time.now()
-    #     #h.frame_id = self.childFrame
-    #     self.path.header = h
-    #
-    # def record_path(self):
-    #     ########Data to make the pose
-    #     p = PoseWithCovarianceStamped()
-    #     p = self.odom.pose
-    #     self.path.poses.append(p.pose)
-    #     self.path.twist.append(self.cmd_vel)
-
 
     #########################Publish best path so far###########################
 
@@ -268,7 +258,23 @@ class Drone:
 
     ############################################################################
 
-    # def front_range(array_in):
+
+        # def createNewPath(self):
+        #     ##########Header for path
+        #     h = std_msgs.msg.Header()
+        #     h.stamp = rospy.Time.now()
+        #     #h.frame_id = self.childFrame
+        #     self.path.header = h
+        #
+        # def record_path(self):
+        #     ########Data to make the pose
+        #     p = PoseWithCovarianceStamped()
+        #     p = self.odom.pose
+        #     self.path.poses.append(p.pose)
+        #     self.path.twist.append(self.cmd_vel)
+
+
+        # def front_range(array_in):
     #     i = 45
     #     for i in range(0, 135):
     #         if (array_in > ranges[i] < 0.5):return False

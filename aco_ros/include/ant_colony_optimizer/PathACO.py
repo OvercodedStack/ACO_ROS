@@ -2,11 +2,13 @@
 #Personalized path data type
 import rospy
 from geometry_msgs.msg import Point
+from geometry_msgs.msg import Quaternion
 import math
 #The packaged point data
 class packagedPt:
     def __init__(self,pt,pheromone,dist,orientation):
         self.point = Point()
+        self.orientation = Quaternion()
         self.point = pt         #The point data
         self.phero = pheromone  #The pheromone influence
         self.distanceij = dist  #The distance data
