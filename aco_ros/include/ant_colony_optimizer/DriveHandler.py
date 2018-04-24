@@ -45,8 +45,7 @@ class DriveHandler:
         myScan = laserscanIn
         myLocation = map.info.origin
         width = map.info.width
-        densityOccipation = []
-        mapLocations      = []
+        densityOccupation = []
         densityClusters   = []
 
         #Drop the last point on stack if reached
@@ -55,13 +54,13 @@ class DriveHandler:
         #self.lastOrigins.append(myLocation)
         #Generate a radius of density around the robot
         for point in (0, self.points):
-            x_other = myLocation.position.x + myScan[point]*cos(self.angles[point]+myLocation.Orientation.z)
-            y_other = myLocation.position.y + myScan[point]*sin(self.angles[point]+myLocation.Orientation.z)
+            x_other = myLocation.position.x + myScan[point]*math.cos(self.angles[point]+myLocation.Orientation.z)
+            y_other = myLocation.position.y + myScan[point]*math.sin(self.angles[point]+myLocation.Orientation.z)
             point = x_other + width*y_other
             densityOccupation.append(int(point))
 
         #Locate a midpoint of density
-        for mapPoint in densityOccipation:
+        for mapPoint in densityOccupation:
             if (mapPoint > 0):
                 densityClusters.append(0)
             else:

@@ -6,18 +6,19 @@ from nav_msgs.msg import MapMetaData
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from move_base_msgs.msg import MoveBaseActionGoal
 from actionlib_msgs.msg import GoalID
-from aco_ros import *
+from include import Drone.py
+
 
 #Independent multi-mesh drone/robot controller with ACO
 #Will seek out a amount of drones to be used for
 
 class ACO:
 #Function to set the map
-    def callForMap(myMap):
+    def callForMap(self,myMap):
         self.map = myMap
         return "map loaded"
 #Function to set Metadata
-    def callForMetadata(data):
+    def callForMetadata(self,data):
         self.metadata = data
         output = "null"
         if data.width == 0 and data.height == 0:
@@ -26,7 +27,7 @@ class ACO:
             output = "Data collected."
         return output
 #Set mypose
-    def callFinalPose(mypose):
+    def callFinalPose(self,mypose):
         self.pose = mypose
         return "Done setting pose"
 #Run main
@@ -38,7 +39,6 @@ class ACO:
                 drone.startDrone()
             if runTime == self.NUMBER_OF_ILLETERATIONS:
                 running = False
-        bestPath = mapHandler(dronePath)
         #point_array = mapHandler.locate_plains(self.map,self.metadata.width,self.metadata.height,5)
 
 #Constructor

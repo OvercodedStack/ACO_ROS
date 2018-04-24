@@ -18,7 +18,7 @@ from std_msgs import String
 
 #We'll concern ourselves with a 2D plane for now. We can't do much about laserscanning the bottom of the drone.
 class Drone:
-    def __init__(self,droneName,seqTp,odomTrue,imuTrue,goalPt,frameID): #Setup
+    def __init__(self,seqTp,droneName,odomTrue,imuTrue,goalPt,frameID): #Setup
         self.SPEED              = 0.40
         self.TURN_SPEED         = 0.55
         self.MAX_DIST           = 0.5
@@ -55,7 +55,8 @@ class Drone:
         self.ang        = Vector3()
         self.cmd_vel    = Twist()
         self.myName     = droneName
-        self.dronePublisher = rospy.Publisher(self.myName,Twist,queue_size=10) #Twist Publisher node
+        self.dronePublisher = rospy.Publisher("/"+ self.myName,Twist,queue_size=10) #Twist Publisher node
+        self.strngPublisher = rospy.Publisher("/"+self.myName,String,queue_size=10)
         self.setValues(odomTrue,imuTrue)
         ####################################### Set Topics##############
         self.sequence = seqTp
@@ -143,8 +144,8 @@ class Drone:
     ############################Utility Functions##############################
 
     def reset(self):
-        my = 1
-        #TODO finish this
+        self.strngPublisher.publish("Reset")
+        #Publisher that publishes a string that resets drone.
 
     def detecWallCrash(self,laserIn):
         if (rospy.Time.now()+self.DELAYSEC >= self.oldTime):
