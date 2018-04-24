@@ -30,31 +30,31 @@ class Drone:
         self.SIDE_SCAN_ANGLE	= 30
         self.FRONT_SCANS	    = self.MULTIPLIER * self.FRONT_SCAN_ANGLE#Scanpoints in the front cone
         self.SIDE_SCANS		    = self.MULTIPLIER * self.SIDE_SCAN_ANGLE #Scanpoints in the side cones
-        self.AMOUNT_OF_POINTS   = 180.0
+        self.AMOUNT_OF_POINTS   = 180.0 #Amount of points in the laserscan
         self.RECORD_INTERVAL    = 3 #Seconds
 
         self.map = Map()
         self.driving  = DriveHandler()
-        self.shutdown = False
         self.oldTime  = rospy.Time.to_sec()
         self.laserscan = LaserScan()
        # self.laserscan = geometry_msgs.LaserScan()
         self.imu      = Imu()
-        self.sequence = 0           #the drone own ID number in group
         self.goalPoint = Point()
-        self.goalPoint = goalPt
-        self.childFrame = frameID    #String
-        #self.path       = Path()
         self.bestPath   = Path()
-        #self.goalArray  = GoalStatusArray()
-        self.cmdString  = ""
-        self.arrayOfPaths = []
         self.odom       = Odometry()
         self.twistMsg   = Twist()
         self.lin        = Vector3()
         self.ang        = Vector3()
         self.cmd_vel    = Twist()
+
+        self.shutdown = False
+        self.goalPoint = goalPt
+        self.childFrame = frameID    #String
+        self.sequence = 0  # the drone own ID number in group
+        self.cmdString  = ""
+        self.arrayOfPaths = []
         self.myName     = droneName
+
         self.dronePublisher = rospy.Publisher("/"+ self.myName,Twist,queue_size=10) #Twist Publisher node
         self.strngPublisher = rospy.Publisher("/"+self.myName,String,queue_size=10)
         self.setValues(odomTrue,imuTrue)
@@ -71,7 +71,8 @@ class Drone:
             droneNameImu = "/droneImu_" + str(self.sequence)
             rospy.Subscriber(droneNameImu,Imu,self.getImu)
         rospy.Subscriber("/map",Map,self.getMap)
-    ############Callbacks###################
+        ############################################Callbacks###################
+
     def getLaser(self,laser):
         if laser:
             self.laserscan = laser
@@ -92,6 +93,7 @@ class Drone:
             self.odom = odomIn
         else:
             return "Problem with odom in " + str(self.sequence)+ "."
+
     ##########################################
     #Start protocol to wander towards goal.
     def start_wandering(self):
@@ -170,7 +172,6 @@ class Drone:
         if (not last):
             self.creteNewPath()
 
-
     #########################Publish best path so far###########################
 
     def publish(self): #Set a publishing state to push data out
@@ -221,7 +222,6 @@ class Drone:
         self.cmd_vel.linear = self.lin
         self.cmd_vel.angular = self.ang
         self.dronePublisher.publish(self.cmd_vel)
-
 
     #############################Checkers for distance##########################
 
@@ -308,3 +308,5 @@ class Drone:
     #
     #     self.dronePublisher.publish(self.cmd_vel)
     #     #Set acceleration speeds and publish to topic
+
+    #############################################################################

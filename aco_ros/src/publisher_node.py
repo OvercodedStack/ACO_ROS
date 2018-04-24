@@ -4,6 +4,7 @@ import rospy
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import MapMetaData
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import Point
 from move_base_msgs.msg import MoveBaseActionGoal
 from actionlib_msgs.msg import GoalID
 from include import Drone.py
@@ -18,14 +19,10 @@ class ACO:
         self.map = myMap
         return "map loaded"
 #Function to set Metadata
-    def callForMetadata(self,data):
-        self.metadata = data
+    def callPoint(self,data):
+        self.point = data
         output = "null"
-        if data.width == 0 and data.height == 0:
-            output = "No data"
-        else:
-            output = "Data collected."
-        return output
+
 #Set mypose
     def callFinalPose(self,mypose):
         self.pose = mypose
@@ -48,6 +45,7 @@ class ACO:
         self.map = OccupancyGrid()
         self.metadata = MapMetaData()
         self.pose = PoseWithCovarianceStamped()
+        self.point = Point()
         self.droneArray = []
         self.NUMBER_OF_ILLETERATIONS = 1000
         self.pheromonePath = []
@@ -64,17 +62,17 @@ class ACO:
         rospy.Subscriber("/map",OccupancyGrid, self.callForMap)
         #rospy.Subscriber("/map_metadata",MapMetaData,self.callForMetadata)
         rospy.Subscriber("/initialpose",PoseWithCovarianceStamped, self.callFinalPose)
-	    ####################################################Run calcuations
+        rospy.Subscriber("/goal",Point,self.callPoint)
+        ####################################################Run calcuations
         if (droneNumber != 0):
-        	i = 1 #counter
-        	while (i != droneNumber): #Instantciate an array of drone Objects
-        		self.droneArray[i] = Drone(i,"drone_"+str(i),True,False) #Set drone name and set the sensors that work at the moment
-                #self.droneArray[i] = Drone()
-        		rospy.loginfo("Found drone" + str(i))
-        		i += 1
-        	self.main()
+            i = 1 #counter
+            while (i != droneNumber): #Instantciate an array of drone Objects
+                self.droneArray[i] = Drone(i,"drone_"+str(i),True,False,self.point,"/myDrone") #Set drone name and set the sensors that work at the moment
+                rospy.loginfo("Found drone" + str(i))
+                i += 1
+            self.main()
         else:
-        	rospy.loginfo("No drones to spawn!")
+            rospy.loginfo("No drones to spawn!")
 
 
 #Trigger

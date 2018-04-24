@@ -28,7 +28,7 @@ class DriveHandler:
         self.points = 180 #Number of Points
         self.angles = -90 #Starting Degrees
         self.openAngleSpace = 41 #points that are free in a general direction
-        self.randomizerGen = new randint()
+        self.randomizerGen = randint()
         self.lastOrigins = [] #Collects Poses with position and quaterion values
         self.THETHAERRORMARGIN = 0.01 #In radians, adds a margin of error to drive towards.
         self.goalPoint = Point()
