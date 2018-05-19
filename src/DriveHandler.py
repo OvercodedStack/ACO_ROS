@@ -23,7 +23,7 @@ class DriveHandler:
         self.MAX_DIST = 8  # meters
         self.points = 667  # Number of points on the sim robot
         # self.points = 180 #Number of Points
-        self.angles = -120.0
+        #self.angles = -120.0
         # self.angles = -90 #Starting Degrees
         self.openAngleSpace = 41  # points that are free in a general direction
         # self.randomizerGen = randint()
@@ -38,49 +38,62 @@ class DriveHandler:
 
     # Functon that returns a point that the robot can go towards once it has a laserscan in view. The idea is that once it runs
     # a point is returned that can point towards a point that is sufficently clear to go to.
-    def locateFrontierPt(self, laserscanIn, mapIn):  # escapePath is a bool that deternimes if this is a escape routine
+    def locateFrontierPt(self, laserscanIn, mapIn,odomIn):  # escapePath is a bool that deternimes if this is a escape routine
+        self.angles = -120.0
         myScan = LaserScan()
         myLocation = Pose()
         mymap = OccupancyGrid()
         myLocation = MapMetaData()
+        REDUCERANGEBY = 30
         mymap = mapIn
         myScan = laserscanIn
-        myLocation = mymap.info.origin
+        myLocation = odomIn.pose.pose
         width = mymap.info.width
         densityOccupation = []
         densityClusters = []
+        laserscanOutPoint = []
+        #rospy.loginfo(len(mymap.data))
         # Generate a radius of density around the robot
         for point in range (0, 667 - 1,1):
-            rospy.loginfo(len(myScan.ranges))
-            x_other = myLocation.position.x + myScan.ranges[point] * math.cos(self.angles + myLocation.orientation.z)
-            y_other = myLocation.position.y + myScan.ranges[point] * math.sin(self.angles + myLocation.orientation.z)
+            pointOut = Point()
+            #+ math.degrees(myLocation.orientation.z)
+            #rospy.loginfo(len(myScan.ranges))
+            x_other = myLocation.position.x + (myScan.ranges[point]*100)/2 * math.cos(math.radians(self.angles))
+            y_other = myLocation.position.y + (myScan.ranges[point]*100)/2 * math.sin(math.radians(self.angles))
             #rospy.loginfo(myScan.ranges[point])
-            point = x_other + width * y_other
-            #rospy.loginfo(point)
+            pointOut.x = myLocation.position.x + (myScan.ranges[point] * math.cos(math.radians(self.angles)))
+            pointOut.y = myLocation.position.y + (myScan.ranges[point] * math.sin(math.radians(self.angles)))
+            #rospy.loginfo(pointOut)
+            laserscanOutPoint.append(pointOut)
 
+            #rospy.loginfo(myScan.ranges[point])
+            #rospy.loginfo(str(x_other) + " -" + str(y_other) )
+            pointS = x_other + width * y_other
 
-            if (not math.isinf(point) and not math.isnan(point)):
-                densityOccupation.append(int(point))
+            #rospy.loginfo(pointS)
+            if (not math.isinf(pointS) and not math.isnan(pointS)):
+                densityOccupation.append(int(pointS))
             self.angles += 0.35982
+            #rospy.loginfo(self.angles)
+
         # Locate a midpoint of density
         #rospy.loginfo(densityOccupation)
-
-
-
-
         for mapPoint in densityOccupation:
 
             if (mymap.data[mapPoint] > 0):
                 densityClusters.append(0)
             else:
                 densityClusters.append(1)
-
         #rospy.loginfo(densityClusters)
         points = []
-        for point in densityClusters:  # Convert all possible "walkable" points into real points instead of map points.
+        counter = 0
+        for point in densityClusters:  # Convert all possible "walkable" points into real points instead of map points
             if (point == 1):
-                myPoint = self.convertMapArrayIntoXY(point, width)
+                myPoint = laserscanOutPoint[counter]
+                #myPoint = self.convertMapArrayIntoXY(point, width)
                 points.append(myPoint)
+            counter += 1
+
         #rospy.loginfo(len(points))
         if (len(points) < 100):  # We want to verify that we can walk foward if we can possibly can do so.
             return "Blocked", False
@@ -100,8 +113,11 @@ class DriveHandler:
     # Function to convert a map index into coordinate X, Y points
     def convertMapArrayIntoXY(self, point, width):
         x_mapPoint = point / width
-        y_mapPoint = (point - x_mapPoint) / width
+        y_mapPoint = point % width
+        #y_mapPoint = (point - x_mapPoint) / width
         finalPoint = Point()
         finalPoint.x = x_mapPoint
         finalPoint.y = y_mapPoint
+
+        #rospy.loginfo(str(x_mapPoint) + " - "+ str(y_mapPoint))
         return finalPoint

@@ -1,5 +1,8 @@
+#!/usr/bin/env python
+
 import math
 import rospy
+import time as pyTime
 from MapHandler import Mapper
 from PathACO import *
 from PointSelector import PointSelect
@@ -21,13 +24,13 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Pose
-from geometry_msgs.msg import Quaternion
-
 
 # We'll concern ourselves with a 2D plane for now. We can't do much about laserscanning the bottom of the drone.
 
 class Drone:
     def __init__(self, seqTp, droneName, odomTrue, imuTrue, frameID):  # Setup
+        rospy.init_node('Ant_Colony_Wrapper')
+        rospy.loginfo("Starting Drone " + droneName)
         self.SPEED = 0.40
         self.SIDE_DISTANCE = 0.50
         self.TURN_SPEED = 0.55
@@ -61,7 +64,7 @@ class Drone:
         self.ang = Vector3()
         self.cmd_vel = Twist()
 
-
+        self.path = Path()
         self.pathCount = 0
         self.shutdown = False
 
@@ -71,60 +74,31 @@ class Drone:
         self.arrayOfPaths = []
         self.myName = droneName
 
-        self.dronePublisher = rospy.Publisher("/" + droneName, Twist, queue_size=10)  # Twist Publisher node
-        self.strngPublisher = rospy.Publisher("/" + droneName, String, queue_size=10)
-        self.pubPath = rospy.Publisher("/ACOpath", Path, queue_size=10)
-        self.sendCommand = rospy.Publisher("/ACOcmd", String, queue_size=10)
-        self.setValues(odomTrue, imuTrue)
-        ####################################### Set Topics##############
-        self.sequence = seqTp
-
-    def setValues(self, odomTrue, imuTrue):  # Setup the subscribers
-        droneNameLaser = "/droneLaser_" + str(self.sequence + 1)
-        rospy.Subscriber(droneNameLaser, LaserScan, self.getLaser)
+        droneNameLaser = "/droneLaser_" + str(seqTp)
         if (odomTrue):
-            droneNameOdom = "/droneOdom_" + str(self.sequence)
+            droneNameOdom = "/droneOdom_" + str(seqTp)
             rospy.Subscriber(droneNameOdom, Odometry, self.getOdom)
         if (imuTrue):
-            droneNameImu = "/droneImu_" + str(self.sequence)
+            droneNameImu = "/droneImu_" + str(seqTp)
             rospy.Subscriber(droneNameImu, Imu, self.getImu)
+        rospy.Subscriber(droneNameLaser, LaserScan, self.getLaser)
         rospy.Subscriber("/map", OccupancyGrid, self.getMap)
         rospy.Subscriber("/goal",Point,self.callPoint)
 
-        ############################################Callbacks###################
+        self.pathPublisher = rospy.Publisher("/ACO_path",Path,queue_size=10)
+        #self.dronePublisher = rospy.Publisher("/" + droneName, Twist, queue_size=10)  # Twist Publisher node
+        self.dronePublisher = rospy.Publisher("/droneCmd_1", Twist, queue_size=10)  # Twist Publisher node
 
-    def callPoint(self, data):
-        self.goalPoint = data
-        output = "null"
+        self.strngPublisher = rospy.Publisher("/" + droneName, String, queue_size=10)
+        ####################################### Set Topics##############
+        self.sequence = seqTp
+        self.reset = False
 
-    def getLaser(self, data):
-        if data:
-            # rospy.loginfo(data.ranges)
-            self.laserscan = data
-        else:
-            return "Problem with laser in " + str(self.sequence) + "."
-
-    def getMap(self, map):
-        if map:
-            self.map = map
-        else:
-            return "Problem with map"
-
-    def getImu(self, imuIn):
-        if imuIn:
-            self.imu = imuIn
-        else:
-            return "No Imu provided in " + str(self.sequence) + "."
-
-    def getOdom(self, odomIn):
-        if odomIn:
-            self.odom = odomIn
-        else:
-            return "Problem with odom in " + str(self.sequence) + "."
 
     ##########################################
     # Start protocol to wander towards goal.
     def start_wandering(self, illterations):
+        self.reset = False
         for i in range(0, illterations, 1):
             self.createNewPath()
             pointSelec = PointSelect()
@@ -134,10 +108,10 @@ class Drone:
             self.driving.setGoal(self.goalPoint)
             counter = 0
             while (wandering & self.shutdown == False):
+                choice = Point()
                 self.cmd_vel = Twist()
                 time = rospy.Time.now()
-                points, firstDrive = self.driving.locateFrontierPt(self.laserscan, self.map)
-                #rospy.loginfo(points)
+                points, firstDrive = self.driving.locateFrontierPt(self.laserscan,self.map,self.odom)
                 if (firstDrive):
                     choice = pointSelec.selectRandom(points)
                     self.driving.firstOff()
@@ -146,7 +120,6 @@ class Drone:
 
                 if (isinstance(choice,basestring)):#Choice used when the code cannot find an exit
                     counter -= 1
-                    rospy.loginfo(len(self.newPath.pointsWithPheromone))
                     choice = self.newPath.pointsWithPheromone[counter].getPoint()
                     self.normalizeVectorTwist(choice)
                     self.removeLastPointPath()
@@ -155,7 +128,6 @@ class Drone:
                     counter += 1
                 if (self.arrivedAtGoal()):  # "Alive" condition to shutoff a drone if needed
                     wandering = False
-
             self.bestPath = self.newMapper.checkForBestPath(self.newPath)
             self.publish()
             self.reset()
@@ -163,9 +135,6 @@ class Drone:
     def arrivedAtGoal(self):
         myCheckX = self.odom.pose.pose.position.x
         myCheckY = self.odom.pose.pose.position.y
-        #rospy.loginfo(self.goalPoint.x)
-        #rospy.loginfo("help")
-
         if ((myCheckX / self.goalPoint.x <= 0.02) & (
                 myCheckY / self.goalPoint.y <= 0.02)):  # Calculate percentage off from the origin.
             return True
@@ -175,7 +144,8 @@ class Drone:
     ############################Utility Functions##############################
 
     def reset(self):
-        self.strngPublisher.publish("Reset")
+        self.reset = True
+        self.strngPublisher.publish(str(self.reset))
         # Publisher that publishes a string that resets drone.
 
     def detecWallCrash(self, laserIn):
@@ -208,15 +178,11 @@ class Drone:
             posePath = PoseStamped()
             h = self.createHeader(points,self.myName)
             posePath.header = h
-
             pose = Pose()
             pose.position = PathACOIn.pointsWithPheromone[points].getPoint()
             pose.orientation = PathACOIn.pointsWithPheromone[points].getOrientation()
-
             posePath.pose = pose
-
             thePath.poses.append(posePath)
-
         self.pathCount += 1
         return thePath
 
@@ -247,7 +213,6 @@ class Drone:
             insidePose = Pose()
             insidePose.position = item.getPoint
             insidePose.orientation = item.getOrientation
-
             tempPose.header = h
             tempPose.pose = insidePose
             poses.append(tempPose)
@@ -256,43 +221,85 @@ class Drone:
     #########################Publish best path so far###########################
 
     def publish(self):  # Set a publishing state to push data out
-        self.pubPath_ = False
-        #self.pubCmd_ = False
-        path = self.convertPath(self.bestPath)
-        while not rospy.is_shutdown():
-            if self.pubPath_:
-                self.pubPath.publish(path)
-                self.pubPath_ = False
+        self.path = self.convertPath(self.bestPath)
+        ############################################Callbacks###################
+
+    def callPoint(self, data):
+        self.goalPoint = data
+        output = "null"
+
+    def getLaser(self, data):
+        if data:
+            self.laserscan = data
+        else:
+            return "Problem with laser in " + str(self.sequence) + "."
+
+    def getMap(self, map):
+        if map:
+            self.map = map
+        else:
+            return "Problem with map"
+
+    def getImu(self, imuIn):
+        if imuIn:
+            self.imu = imuIn
+        else:
+            return "No Imu provided in " + str(self.sequence) + "."
+
+    def getOdom(self, odomIn):
+        if odomIn:
+            self.odom = odomIn
+        else:
+            return "Problem with odom in " + str(self.sequence) + "."
+
 
     ##################################Twist generator###########################
     def normalizeVectorTwist(self, secondPoint):
-        #myOrigin = self.lastOrigins[len(self.lastOrigins) - 1]
-        #rospy.loginfo("Help")
-        self.cmd_vel = Twist()
+        margin = 0.05
         myOrigin = self.odom.pose.pose
-        opposite = myOrigin.position.y - secondPoint.y
-        adjacent = myOrigin.position.x - secondPoint.x
-        thethaGoal = math.atan2(adjacent, opposite)  # The Z thetha goal that we're trying to turn towards.
-        radThethaGoal = math.radians(thethaGoal)
-        myAngle = myOrigin.orientation.z
+        distCheckOld = math.sqrt((myOrigin.position.y - secondPoint.y )**2+( myOrigin.position.x - secondPoint.x)**2)
+        rospy.loginfo(secondPoint)
+        closeBy = False
+        while (self.arrivedAtPoint(secondPoint)  == False):
+            myFront = self.odom.pose.pose.orientation.z
+            self.cmd_vel = Twist()
+            opposite =  myOrigin.position.y - secondPoint.y
+            adjacent =  myOrigin.position.x - secondPoint.x
+            thethaGoal = math.atan2(adjacent, opposite)  # The Z thetha goal that we're trying to turn towards.
+            radThethaGoal = math.radians(thethaGoal)
+            rospy.loginfo(radThethaGoal)
+            rospy.loginfo(myFront)
+            myDistance = math.sqrt((opposite)**2+(adjacent)**2)
+            #rospy.loginfo(self.odom.pose.pose.orientation)
 
-        if (myAngle > radThethaGoal):  # turn right
-            self.right()
-        elif (myAngle < radThethaGoal):  # turn left
-            self.left()
-        elif (radThethaGoal - self.THETHAERRORMARGIN >= myAngle <= radThethaGoal + self.THETHAERRORMARGIN):
-            self.foward()
-        else:
-            self.escape()
-
+            #if (round(radThethaGoal,4) == round(myFront,4)):
+            if (radThethaGoal-margin  <= myFront <= radThethaGoal+margin):
+                self.lin.x = self.SPEED
+            else:
+                self.direction(radThethaGoal,myFront)
+            #rospy.loginfo(secondPoint)
+            if (myDistance > distCheckOld+0.1):
+                break
+            self.cmd_vel.linear = self.lin
+            self.cmd_vel.angular = self.ang
+            self.dronePublisher.publish(self.cmd_vel)
+        rospy.loginfo("Beep")
+        self.stop()
         self.cmd_vel.linear = self.lin
         self.cmd_vel.angular = self.ang
         self.dronePublisher.publish(self.cmd_vel)
 
+    def arrivedAtPoint(self,point):
 
+        myCheckX = self.odom.pose.pose.position.x
+        myCheckY = self.odom.pose.pose.position.y
+        if ((myCheckX/point.x >= 0.95) and (myCheckY/point.y >= 0.95)):  # Calculate percentage off from the origin.
+            return True
+        else:
+            return False
     ################################ROS Twist settings##########################
 
-    def move_foward(self, dir):
+    def move_foward(self):
         self.lin.x = self.SPEED
 
     def stop(self):
@@ -303,15 +310,27 @@ class Drone:
         self.ang.y = 0
         self.ang.z = 0
 
+    def direction(self,dir,dirOdom):
+        speed = 1 * abs(self.odom.pose.pose.orientation.z / dir)
+        if (dir > dirOdom ):
+            self.ang.z = 0.1
+        else:
+            self.ang.z = -0.1
+        self.lin.z = speed
+
+
     def escape(self):
         self.lin.x = 0
-        self.ang.y = self.TURN_SPEED
+        #self.lin.y = self.TURN_SPEED
+        self.ang.z = self.TURN_SPEED
 
     def left(self):
-        self.ang.y = self.TURN_SPEED
+        #self.lin.y = self.TURN_SPEED
+        self.ang.z = self.TURN_SPEED
 
     def right(self):
-        self.ang.y = -self.TURN_SPEED
+        #self.lin.y = -self.TURN_SPEED
+        self.ang.z = -self.TURN_SPEED
 
     def drop(self):
         self.lin.z = 0.75 * -self.SPEED
@@ -321,112 +340,42 @@ class Drone:
 
     ############################################################################
 
-    #############################################################################
-
-
-    # def controller_cmdList(self, CmdList):
-    #     decisions = {0: self.stop, 1: self.foward, 2: self.left, 3: self.right, 4: self.escape, 5: self.rise,
-    #                  6: self.fall}
-    #     for cmd in CmdList:
-    #         decisions[cmd]()
-    #     self.cmd_vel.linear = self.lin
-    #     self.cmd_vel.angular = self.ang
-    #     self.dronePublisher.publish(self.cmd_vel)
-
-    #############################Checkers for distance##########################
-    #
-    # def isStuck(self):
-    #     if (self.lin.x == 0 & self.ang.y == 0):
-    #         return True
-    #     return False
-
-
-
-    # def convertTwist(self, point):
-    #     if (self.closeTo(In)):
-    #         self.recalculate = True
-    #     else:
-    #         self.controller_cmdList(In)
-
-    # def checkLocation(self, myPos):
-    #     myCheckX = self.odom.pose.pose.position.x
-    #     myCheckY = self.odom.pose.pose.position.y
-    #     if ((myPos.x == myCheckX) & (myPos.y == myCheckY)):
-    #         return True
-    #     else:
-    #         return False
-
-    # def checkForGoal(self, myPos):
-    #     myCheckX = self.goalPoint.x
-    #     myCheckY = self.goalPoint.y
-    #     if (myPos.x == myCheckX & myPos.y == myCheckY):
-    #         return self.reset()
-    #     else:
-    #         return False
-
-    # magnitude = math.sqrt((opposite* opposite)+(adjacent*adjacent))
-    # xNorm = opposite/magnitude
-    # yNorm = adjacent/magnitude
-    # myMsg = Twist()
-    # Descision Plan for between two points
-    # decisions = {0:stop,1:foward,2 :left,3:right,4:escape,5:rise,6:fall}
-
-    #                rospy.loginfo(str(self.oldTime))
-    #               rospy.loginfo(str(time.to_sec())+"new") #Debug
-
-    # if (time.to_sec() >= float(str(self.oldTime)) + self.RECORD_INTERVAL):
-    #    self.newPath = PathACO()      #Create a new pathACO data type
-    #    self.oldTime = time.to_sec()
-    # Check if the robot hasn't crashed yet or is near the new position
-    # if near or crashed, create a new point to walk towards
-    # if(not self.detecWallCrash(self.laserscan) | self.checkLocation(newPt)):
-    #    self.checkTwist(newPt)
-    # else:
-    #    newPt = self.driving.locateFrontierPt(self.laserscan, self.map,self.bestPath
-
-    # def createNewPath(self):
-    #     ##########Header for path
-    #     h = std_msgs.msg.Header()
-    #     h.stamp = rospy.Time.now()
-    #     #h.frame_id = self.childFrame
-    #     self.path.header = h
-    #
-    # def record_path(self):
-    #     ########Data to make the pose
-    #     p = PoseWithCovarianceStamped()
-    #     p = self.odom.pose
-    #     self.path.poses.append(p.pose)
-    #     self.path.twist.append(self.cmd_vel)
-
-    # def front_range(array_in):
-    #     i = 45
-    #     for i in range(0, 135):
-    #         if (array_in > ranges[i] < 0.5):return False
-    # 	return True
-    #
-    # def side_ranges(array_in):
-    #     pointFound = 0
-    #     j = self.MIN_DIST
-    #     for j in range (0, self.MAX_DIST): #(int i = min; i < max; i++){
-    #         if (array_in >ranges[j] > 1.25):pointFound+=1
-    #     return pointFound
-
-    # def controller_wanderer(self): #Controls to move the drone
-    #     decisions = {0:self.stop,1:self.foward,2 :self.left,3:self.right,4:self.escape,5:self.rise,6:self.fall}
-    #     if (front_range()): #if the whole array gets swampped, attempt reverse and escape.
-    #         decisions[1]()
-    #     if (self.stopMoving):
-    #         decisions[0]()
-    #     if(rangeOnSides(scan_in,0,90-SIDE_SCANS) > rangeOnSides(scan_in,SIDE_SCANS+90,180)):# printf("Turn Right");
-    #         decisions[3]()
-    #     if(rangeOnSides(scan_in,0,90-SIDE_SCANS) < rangeOnSides(scan_in,SIDE_SCANS+90,180)):#printf("Turn Left")
-    #         decisions[2]()
-    #     if(self.isStuck() && selt.stopMoving != True):#	printf("Stop");
-    #         decisions[4]()
-    #     self.cmd_vel.linear = self.lin
-    #     self.cmd_vel.angular = self.ang
-    #
-    #     self.dronePublisher.publish(self.cmd_vel)
-    #     #Set acceleration speeds and publish to topic
+    def run(self):
+        r = rospy.Rate(10)
+        NUMBER_OF_ILLETERATIONS = 1000
+        pyTime.sleep(2)
+        while not rospy.is_shutdown():
+            self.start_wandering(NUMBER_OF_ILLETERATIONS)
+            self.pathPublisher.publish(self.path)
+            rospy.loginfo("Publishing.")
+            r.sleep()
 
     #############################################################################
+
+# Trigger
+if __name__ == '__main__':
+
+    sequence = 1
+    droneName = "droneACO_1"
+    odomTrue = True
+    IMUTrue = True
+    frameID = "/Drone_1"
+    try:
+        main_prog = Drone(sequence,droneName,odomTrue,IMUTrue,frameID)
+        main_prog.run()
+    except rospy.ROSInterruptException:
+        pass
+
+
+
+
+        # if (myAngle > radThethaGoal):  # turn right
+        #     self.move_foward()
+        #     self.right()
+        # elif (myAngle < radThethaGoal):  # turn left
+        #     self.move_foward()
+        #     self.left()
+        # elif (radThethaGoal - self.THETHAERRORMARGIN >= myAngle <= radThethaGoal + self.THETHAERRORMARGIN):
+        #     self.foward()
+        # else:
+        #     self.escape()
