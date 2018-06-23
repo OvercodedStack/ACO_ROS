@@ -3,6 +3,9 @@ This is a work in progress ACO algorithm built for use in automated driving usin
 
 While there are some variants of ACO, this project is inspired by the book written by Marco Dorigo and Thomas Stützle. If you have access to th e book via your institution or other means, please give it a read to understand the concept. https://mitpress.mit.edu/books/ant-colony-optimization . While this package uses some parts and logic from ACO, it is important to realize that there are some parts still in development as the project becomes more avaliable.   
 
+# Disclaimer - WIP
+
+This was part of a research project utilizing virtual drones and perfect sensor data. Currently as it stands the program does not operate as expected and requires some rewriting in order to perform better than originally planned. **It is not reccomended to utilize the code at the present moment** 
 
 Driving a robot
 --------------
